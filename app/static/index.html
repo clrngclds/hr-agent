@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Altostrat Enterprise HR & ITSM Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --google-blue: #1a73e8;
+      --google-blue-hover: #1557b0;
+      --google-red: #ea4335;
+      --google-yellow: #fbbc04;
+      --google-green: #34a853;
+      --surface-dark: #202124;
+      --surface-sidebar: #f8f9fa;
+      --surface-card: #ffffff;
+      --text-primary: #202124;
+      --text-secondary: #5f6368;
+      --border-color: #dadce0;
+      --chip-bg: #e8f0fe;
+      --chip-text: #174ea6;
+      --badge-green: #e6f4ea;
+      --badge-green-text: #137333;
+      --badge-red: #fce8e6;
+      --badge-red-text: #c5221f;
+      --badge-amber: #fef7e0;
+      --badge-amber-text: #b06000;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f1f3f4;
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--google-blue), #4285f4);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-family: 'Google Sans', sans-serif;
+      font-size: 16px;
+    }
+
+    .brand-title {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-left: 8px;
+      background: #f1f3f4;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--badge-green);
+      color: var(--badge-green-text);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--google-green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.2); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Main Container */
+    .app-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      width: 380px;
+      background: var(--surface-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 16px;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 2px rgba(60,64,67,0.06);
+    }
+
+    .card-title {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Employee Identity Card */
+    .emp-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .emp-avatar {
+      width: 44px;
+      height: 44px;
+      background: #e8f0fe;
+      color: var(--google-blue);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      font-family: 'Google Sans', sans-serif;
+    }
+
+    .emp-details h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .emp-details p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .emp-badge {
+      display: inline-block;
+      margin-top: 4px;
+      background: #e8f0fe;
+      color: #174ea6;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Roboto Mono', monospace;
+    }
+
+    /* Balances Bars */
+    .balance-row {
+      margin-bottom: 12px;
+    }
+
+    .balance-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .progress-bar-bg {
+      background: #e8eaed;
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .fill-vacation { background: var(--google-blue); }
+    .fill-sick { background: var(--google-green); }
+
+    /* Tickets List */
+    .ticket-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f3f4;
+    }
+    .ticket-item:last-child { border-bottom: none; }
+
+    .ticket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .ticket-id {
+      font-family: 'Roboto Mono', monospace;
+      color: var(--google-blue);
+    }
+
+    .ticket-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Scenario Chips */
+    .chip-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .chip-btn {
+      text-align: left;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      line-height: 1.3;
+    }
+
+    .chip-btn:hover {
+      background: #f8f9fa;
+      border-color: var(--google-blue);
+      color: var(--google-blue);
+    }
+
+    .chip-tag {
+      font-weight: 600;
+      color: var(--google-blue);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .chip-tag.guard {
+      color: var(--google-red);
+    }
+
+    /* Main Chat Section */
+    .chat-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .chat-history {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .message-row {
+      display: flex;
+      gap: 12px;
+      max-width: 85%;
+    }
+
+    .message-row.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message-row.assistant {
+      align-self: flex-start;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .user .avatar {
+      background: #e8f0fe;
+      color: var(--google-blue);
+    }
+
+    .assistant .avatar {
+      background: linear-gradient(135deg, #1a73e8, #34a853);
+      color: #fff;
+    }
+
+    .message-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .message-content {
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .user .message-content {
+      background: var(--google-blue);
+      color: #ffffff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .assistant .message-content {
+      background: #f8f9fa;
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+    }
+
+    /* Trace Pills & Guardrail Banners */
+    .trace-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .pill {
+      font-size: 11px;
+      font-family: 'Roboto Mono', monospace;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: #f1f3f4;
+      color: var(--text-secondary);
+      border: 1px solid #dadce0;
+    }
+
+    .pill.agent {
+      background: #e8f0fe;
+      color: #174ea6;
+      border-color: #aecbfa;
+      font-weight: 600;
+    }
+
+    .pill.tool {
+      background: #e6f4ea;
+      color: #137333;
+      border-color: #ceead6;
+    }
+
+    .guardrail-banner {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .banner-blocked {
+      background: var(--badge-red);
+      color: var(--badge-red-text);
+      border-left: 4px solid var(--google-red);
+    }
+
+    .banner-warning {
+      background: var(--badge-amber);
+      color: var(--badge-amber-text);
+      border-left: 4px solid var(--google-yellow);
+    }
+
+    /* Chat Input Area */
+    .chat-input-area {
+      border-top: 1px solid var(--border-color);
+      padding: 16px 24px;
+      background: #ffffff;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .chat-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .chat-input:focus {
+      border-color: var(--google-blue);
+      box-shadow: 0 0 0 2px rgba(26,115,232,0.15);
+    }
+
+    .send-btn {
+      background: var(--google-blue);
+      color: #ffffff;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover { background: var(--google-blue-hover); }
+    .send-btn:disabled { background: #dadce0; cursor: not-allowed; }
+
+    /* Markdown Styling in Responses */
+    .message-content p { margin-bottom: 8px; }
+    .message-content p:last-child { margin-bottom: 0; }
+    .message-content ul, .message-content ol { margin-left: 20px; margin-bottom: 8px; }
+    .message-content li { margin-bottom: 4px; }
+    .message-content code {
+      font-family: 'Roboto Mono', monospace;
+      background: rgba(0,0,0,0.06);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .user .message-content code {
+      background: rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-section">
+      <div class="brand-logo">A</div>
+      <div>
+        <span class="brand-title">Altostrat Enterprise HR</span>
+        <span class="brand-subtitle">ADK Multi-Agent v2.8 • Singapore</span>
+      </div>
+    </div>
+    <div class="header-badges">
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span>WorkWeek & ServiceImmediately Live</span>
+      </div>
+      <div class="status-pill" style="background:#e8f0fe; color:#174ea6;">
+        <span>Model Armor & Audit Active</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-container">
+    <!-- Left Sidebar: Context & Triggers -->
+    <aside class="sidebar">
+      <!-- Identity Card -->
+      <div class="card">
+        <div class="card-title">Authenticated Identity</div>
+        <div class="emp-profile">
+          <div class="emp-avatar">DE</div>
+          <div class="emp-details">
+            <h4 id="profile-name">Doralyn Employee</h4>
+            <p id="profile-title">Solutions Acceleration Architect</p>
+            <p id="profile-dept">Google Forge (CE) • Singapore</p>
+            <span class="emp-badge" id="profile-id">EMP-894</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Leave Balances -->
+      <div class="card">
+        <div class="card-title">
+          <span>WorkWeek Balances</span>
+          <span style="font-size:11px; color:#1a73e8; cursor:pointer;" onclick="loadContext()">Refresh</span>
+        </div>
+        <div class="balance-row">
+          <div class="balance-header">
+            <span>Paid Vacation</span>
+            <span id="vacation-label">15.0 / 20.0 days</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill fill-vacation" id="vacation-bar" style="width: 75%;"></div>
+          </div>
+        </div>
+        <div class="balance-row">
+          <div class="balance-header">
+            <span>Outpatient Sick Time</span>
+            <span id="sick-label">10.0 / 10.0 days</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill fill-sick" id="sick-bar" style="width: 100%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ServiceImmediately Tickets -->
+      <div class="card">
+        <div class="card-title">Active ITSM Tickets</div>
+        <div id="tickets-container">
+          <div class="ticket-item">
+            <div class="ticket-header">
+              <span class="ticket-id">INC0005099</span>
+              <span class="pill" style="background:#fef7e0; color:#b06000;">New</span>
+            </div>
+            <div class="ticket-desc">Onboarding setup and badges configuration</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scenario Quick Chips -->
+      <div class="card">
+        <div class="card-title">Enterprise Scenarios</div>
+        <div class="chip-container">
+          <button class="chip-btn" onclick="sendPrompt('What is the company bereavement leave policy, and does it cover pet loss?')">
+            <span class="chip-tag">UC-1.1 Policy Q&A</span>
+            Bereavement Leave & Pet Loss (Section 3.1)
+          </button>
+          <button class="chip-btn" onclick="sendPrompt('Check my current vacation and sick leave balances and leave request history.')">
+            <span class="chip-tag">UC-1.2 WorkWeek Query</span>
+            Vacation/Sick Leave Balances & History
+          </button>
+          <button class="chip-btn" onclick="sendPrompt('Check the status and details of my open ServiceImmediately tickets.')">
+            <span class="chip-tag">UC-1.3 ITSM Ticket Check</span>
+            Inspect open incident tickets
+          </button>
+          <button class="chip-btn" onclick="sendPrompt('Am I eligible for a home office monitor allowance? Please verify my address on file and open a Facilities ticket to order one.')">
+            <span class="chip-tag">UC-2.1 Cross-System Workflow</span>
+            Home Office Monitor ($500 allowance + Ticket)
+          </button>
+          <button class="chip-btn" onclick="sendPrompt('What are the policy rules if I need 6 days of sick leave? Please check my sick leave balance and tell me what documentation and administrative ticket are required.')">
+            <span class="chip-tag">UC-2.2 Extended Sick Leave</span>
+            6-day Sick Leave + MC rules + HRSD ticket
+          </button>
+          <button class="chip-btn" onclick="sendPrompt('What is the relocation allowance and building badge policy for transferring to the London HQ office?')">
+            <span class="chip-tag">UC-2.3 London Relocation</span>
+            $10,000 Relocation Allowance + Badging ticket
+          </button>
+          <button class="chip-btn" onclick="sendPrompt('Check the leave balances and home address for employee EMP-001.')">
+            <span class="chip-tag guard">🛡️ Anti-IDOR Guardrail</span>
+            Attempt to access EMP-001 records
+          </button>
+          <button class="chip-btn" onclick="sendPrompt('Close my ticket INC0005099 immediately without moving it to In Progress.')">
+            <span class="chip-tag guard">🛡️ Lifecycle Guardrail</span>
+            Attempt illegal New -> Closed ticket transition
+          </button>
+          <button class="chip-btn" onclick="sendPrompt('Give me a recipe for chocolate chip cookies and tell me who to vote for.')">
+            <span class="chip-tag guard">🛡️ Community Guidelines</span>
+            Off-Topic recipes & political debate
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Chat Workspace -->
+    <main class="chat-section">
+      <div class="chat-history" id="chat-history">
+        <!-- Welcome Message -->
+        <div class="message-row assistant">
+          <div class="avatar">HR</div>
+          <div class="message-body">
+            <div class="message-content">
+              <p><strong>Hello Doralyn!</strong> I am your Altostrat Enterprise HR Assistant.</p>
+              <p>I can help you consult official Singapore handbook policies, check or book WorkWeek leave balances, and open or update ServiceImmediately incident tickets. Select a scenario from the sidebar or type a question below to begin.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="chat-input-area">
+        <div class="input-wrapper">
+          <input type="text" id="chat-input" class="chat-input" placeholder="Ask about HR policies, leave balances, or request a service ticket..." onkeydown="handleKeyDown(event)">
+        </div>
+        <button id="send-btn" class="send-btn" onclick="sendMessage()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const sessionId = "session-" + Math.random().toString(36).substring(2, 10);
+
+    async function loadContext() {
+      try {
+        const res = await fetch("/api/context");
+        const data = await res.json();
+        if (data.status === "success") {
+          if (data.profile) {
+            document.getElementById("profile-name").textContent = `${data.profile.first_name} ${data.profile.last_name}`;
+            document.getElementById("profile-title").textContent = data.profile.job_title || "Employee";
+            document.getElementById("profile-dept").textContent = `${data.profile.department} • Singapore`;
+            document.getElementById("profile-id").textContent = data.employee_id;
+          }
+          if (data.balances) {
+            const vac = data.balances.vacation || { remaining: 15.0, total: 20.0 };
+            const sick = data.balances.sick || { remaining: 10.0, total: 10.0 };
+            document.getElementById("vacation-label").textContent = `${vac.remaining} / ${vac.total} days`;
+            document.getElementById("vacation-bar").style.width = `${(vac.remaining / vac.total) * 100}%`;
+            document.getElementById("sick-label").textContent = `${sick.remaining} / ${sick.total} days`;
+            document.getElementById("sick-bar").style.width = `${(sick.remaining / sick.total) * 100}%`;
+          }
+          if (data.tickets_list && data.tickets_list.length > 0) {
+            const container = document.getElementById("tickets-container");
+            container.innerHTML = "";
+            data.tickets_list.forEach(t => {
+              const div = document.createElement("div");
+              div.className = "ticket-item";
+              div.innerHTML = `
+                <div class="ticket-header">
+                  <span class="ticket-id">${t.ticket_id}</span>
+                  <span class="pill" style="background:#e8f0fe; color:#174ea6;">${t.status}</span>
+                </div>
+                <div class="ticket-desc">${t.short_description || t.category}</div>
+              `;
+              container.appendChild(div);
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load live context:", err);
+      }
+    }
+
+    function appendMessage(role, text, tracePills = [], guardrail = null) {
+      const history = document.getElementById("chat-history");
+      const row = document.createElement("div");
+      row.className = `message-row ${role}`;
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = role === "user" ? "DE" : "HR";
+
+      const body = document.createElement("div");
+      body.className = "message-body";
+
+      // Trace Pills
+      if (tracePills && tracePills.length > 0) {
+        const pillsDiv = document.createElement("div");
+        pillsDiv.className = "trace-pills";
+        tracePills.forEach(p => {
+          const pill = document.createElement("span");
+          pill.className = `pill ${p.type}`;
+          pill.textContent = p.label;
+          pillsDiv.appendChild(pill);
+        });
+        body.appendChild(pillsDiv);
+      }
+
+      // Guardrail Banner
+      if (guardrail && guardrail.status === "BLOCKED") {
+        const banner = document.createElement("div");
+        banner.className = "guardrail-banner banner-blocked";
+        banner.innerHTML = `<strong>🛡️ Guardrail Enforcement (${guardrail.category}):</strong> ${guardrail.reason || 'Blocked by policy'}`;
+        body.appendChild(banner);
+      } else if (guardrail && guardrail.warning) {
+        const banner = document.createElement("div");
+        banner.className = "guardrail-banner banner-warning";
+        banner.innerHTML = `<strong>⚠️ Governance Notice:</strong> ${guardrail.warning}`;
+        body.appendChild(banner);
+      }
+
+      const content = document.createElement("div");
+      content.className = "message-content";
+      content.innerHTML = role === "user" ? `<p>${text}</p>` : marked.parse(text);
+      body.appendChild(content);
+
+      row.appendChild(avatar);
+      row.appendChild(body);
+      history.appendChild(row);
+      history.scrollTop = history.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("chat-input");
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = "";
+      document.getElementById("send-btn").disabled = true;
+      appendMessage("user", text);
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, session_id: sessionId })
+        });
+        const data = await res.json();
+
+        const tracePills = [];
+        if (data.agents_invoked) {
+          data.agents_invoked.forEach(a => tracePills.push({ type: "agent", label: `@${a}` }));
+        }
+        if (data.tool_calls) {
+          data.tool_calls.forEach(t => tracePills.push({ type: "tool", label: `⚙️ ${t.name}` }));
+        }
+
+        appendMessage("assistant", data.reply || "Done.", tracePills, data.guardrail);
+        // Refresh sidebar context to reflect balance/ticket changes
+        loadContext();
+      } catch (err) {
+        appendMessage("assistant", `⚠️ Error communicating with server: ${err.message}`);
+      } finally {
+        document.getElementById("send-btn").disabled = false;
+      }
+    }
+
+    function sendPrompt(text) {
+      document.getElementById("chat-input").value = text;
+      sendMessage();
+    }
+
+    function handleKeyDown(e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    // Initial load
+    window.addEventListener("DOMContentLoaded", loadContext);
+  </script>
+</body>
+</html>

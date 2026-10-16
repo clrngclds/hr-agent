@@ -1,0 +1,102 @@
+{
+  "overall_drift_score": 3.0,
+  "grade": "C",
+  "drift_level": "Moderate Drift",
+  "summary": "The hr-agent repository delivers a functional, end-to-end ADK v2.8.0 Multi-Agent Supervisor implementation (hr_agent coordinating hr_policy_agent, workweek_agent, and serviceimmediately_agent) that passes 33/33 unit/integration tests and achieves 5.0000/5.0000 on its 10-case golden evaluation suite. However, when audited strictly against SDD v0.3 (Enterprise HR Agentic Solution Design Document - MVP 1) under the Architecture Drift Evaluation rubric, all four axes are capped at 3 (Overall Score: 3.00 / 5.00, Grade: C — Moderate Drift) due to environment hardcoding (Principle 1), authentication/secret management shortcuts (Principle 2), API/data contract discrepancies, and unfulfilled SDD MVP 1 infrastructure and resilience commitments (Principle 3).",
+  "axes": [
+    {
+      "name": "Component & Topology Alignment",
+      "score": 3,
+      "weight": 0.30,
+      "evidence": "Core ADK multi-agent topology in app/agent.py:L71-L204 matches SDD §3.1 (root supervisor hr_agent + specialist sub-agents hr_policy_agent, workweek_agent, serviceimmediately_agent, SafetyGuardrailPlugin, and FastAPI web serving surface in app/fast_api_app.py:L88-L125). However, several in-scope MVP 1 architectural components from SDD §1.3, §5.2, and §5.3 are omitted or replaced with local workarounds.",
+      "gaps": [
+        "Missing Saga / Compensating Action Orchestrator & Cloud Tasks DLQ (SDD §5.3): No durable Cloud Tasks retry queue, Pub/Sub IT Ops alerting, or saga_state (PENDING_RETRY, RECOVERED, ESCALATED) tracking exists in app/ for cross-system partial failures in UC-2.1, UC-2.2, and UC-2.3.",
+        "Missing Event-Driven GCS-to-Vertex AI Search Sync Pipeline (SDD §1.3 & §5.5.1): Primary policy retrieval in app/policy_rag.py:L26-L308 uses an in-memory BM25 index over local file app/data/hr_policy_handbook.md (with Vertex AI Search disabled by default behind ENABLE_VERTEX_SEARCH=false at app/policy_rag.py:L311), and no Cloud Run Pub/Sub ingestion function exists.",
+        "External Mock SaaS MCP Endpoints vs. In-Repo FastMCP Microservices (SDD §1.3 & §5.1): app/mcp_tools.py:L35-L51 connects as a client to pre-hosted external mock endpoints (mock-saas.aishprabhat.demo.altostrat.com) rather than packaging the workweek-mcp and serviceimmediately-mcp FastMCP microservices and circuit breakers specified in SDD §1.3."
+      ]
+    },
+    {
+      "name": "Design Pattern & Abstraction Drift",
+      "score": 3,
+      "weight": 0.25,
+      "evidence": "ADK BasePlugin guardrail hooks (SafetyGuardrailPlugin.before_model_callback / after_model_callback in app/guardrails.py:L336-L405) and before_tool_callback (enforce_tool_guardrails in app/guardrails.py:L408-L666) cleanly implement layered pre-execution and post-execution interception. However, Principle 1 (Environment Isolation), Principle 2 (Security & IAM Boundary Realization), and Principle 3 (Resilience Patterns) are violated.",
+      "gaps": [
+        "Hardcoded Static Employee Identity & Process-Wide Global State (Principle 1 & 2 Violation — SDD §4.1.1): Employee ID 'EMP-894 (Doralyn Employee)' is hardcoded into agent system instructions (app/agent.py:L55, L87, L116, L153), fallback arguments (app/guardrails.py:L158, L346, L389; app/mcp_tools.py:L138, L178), and a process-global variable _CACHED_VERIFIED_EMPLOYEE_ID (app/mcp_tools.py:L54, L123-L139), breaking multi-user concurrency.",
+        "Hardcoded Secrets in Source Code (Principle 2 Violation — SDD §4.1): Live MCP authentication tokens (mcp_iQST8fpR... and mcp_tspNuAUI...) are hardcoded as default strings in app/mcp_tools.py:L39-L51 and committed in .env instead of being fetched via Google Cloud Secret Manager.",
+        "Missing OAuth 2.0 Identity Middleware & Header Binding (Principle 2 Violation — SDD §4.1.1 & §4.4): app/fast_api_app.py:L127-L215 does not validate OAuth 2.0 Bearer tokens or resolve corporate emails via get_employee_by_email, and app/mcp_tools.py:L59, L91 omits both X-On-Behalf-Of (§4.1.1) and X-Automation-Origin: altostrat-hr-agent (§4.4) headers.",
+        "Missing Circuit Breaker & Exponential Backoff on MCP Calls (Principle 3 Violation — SDD §5.2): call_workweek_mcp_tool and call_serviceimmediately_mcp_tool (app/mcp_tools.py:L57-L104) instantiate raw httpx.AsyncClient(timeout=15.0) per call without retry backoff (500ms, 1000ms, 2000ms) or a 5-failure circuit breaker.",
+        "Supervisor Tool Layering Bypass (SDD §3.1): root_agent (app/agent.py:L188-L195) registers all specialist tools and MCP toolsets directly on the supervisor in addition to sub_agents, allowing the supervisor to bypass specialist sub-agent boundaries."
+      ]
+    },
+    {
+      "name": "API & Data Contract Compliance",
+      "score": 3,
+      "weight": 0.20,
+      "evidence": "MCP tool invocations and FastAPI routes (/ui, /hr, /api/chat, /api/context, /api/audit-logs in app/fast_api_app.py:L108-L305) function end-to-end against the live MCP servers. However, tool names, parameter signatures, units, Pydantic DTO entities, error envelopes, and audit log schemas diverge from SDD §5.1 and §5.4.",
+      "gaps": [
+        "WorkWeek Tool Signature & Unit Mismatches (SDD §5.1.1): Code uses get_employee_balances (vs. SDD get_leave_balances), request_time_off with float 'days' (vs. SDD submit_leave_request with float 'hours'), update_personal_info(employee_id, address, phone) (vs. SDD update_contact_info(employee_id, home_address, phone_number)), and omits get_employee_by_email(email: str).",
+        "ServiceImmediately Tool Signature Mismatches (SDD §5.1.2): Code uses get_ticket_details (vs. SDD query_ticket_details), create_ticket(requested_by=...) without origin parameter or 4-hour duplicate ticket scan (vs. SDD create_incident_ticket(caller_id, category, short_description, priority, origin)), and update_ticket_status(ticket_id, status) without resolution_notes (vs. SDD update_ticket_status(ticket_id, target_state, resolution_notes)).",
+        "Missing SDD §5.4.2 Pydantic Entity Schemas & ToolError Envelope: None of the 11 Pydantic models specified in SDD §5.4.2 (EmployeeProfile, Address, LeaveBalanceResponse, LeaveBalance, LeaveSubmissionResult, UpdateResult, TicketDetails, TicketComment, TicketCreationResult, StatusUpdateResult, PolicyChunk) or the ToolError envelope are implemented; app/fast_api_app.py:L137-L161 parses unstructured text strings via regex and hardcodes fallback ticket ID 'INC0005099'.",
+        "Audit Log Schema Divergence (SDD §5.4.3): record_audit_event (app/guardrails.py:L48-L71) stores a 7-field dict in an in-memory 200-entry list (AUDIT_LOG) and lacks SDD §5.4.3 BigQuery hr_agent_audit.events columns (trace_id, session_id, user_subject_hash, backend_object_id, latency_ms, model_id, input_tokens, output_tokens, armor_verdict).",
+        "PII Redaction Scope Gap in Logs (SDD §4.3): redact_spii (app/guardrails.py:L79-L107) masks SG NRIC, US SSN, and credit cards, but does not redact phone numbers, home street addresses, or medical notes to [REDACTED_PII] as specified in SDD §4.3."
+      ]
+    },
+    {
+      "name": "Deployment, Evaluation & Operational Readiness",
+      "score": 3,
+      "weight": 0.25,
+      "evidence": "Dockerfile (hr-agent/Dockerfile:L1-L33), pyproject.toml, 33 unit/integration tests, and the ADK evaluation pipeline (tests/eval/eval_config.yaml, tests/eval/response_quality.py, tests/eval/evaluation_report.md, tests/eval/datasets/hr-mvp1-golden-dataset.json) are present and execute cleanly. However, environment hardcoding (Principle 1), incomplete .env.example (Principle 2), generic README documentation, and unfulfilled SDD §7.1 Terraform and §9.2 dataset scale commitments (Principle 3) cap this axis at 3.",
+      "gaps": [
+        "Hardcoded Environment & Hostname Defaults (Principle 1 Violation): Hardcoded GCP project 'dc-test2-489503' in app/agent.py:L39, app/fast_api_app.py:L51, app/guardrails.py:L284, app/policy_rag.py:L315, and tests/eval/response_quality.py:L26; hardcoded machine-specific CORS origin 'http://doralyn.c.googlers.com:8000' and wildcard '*' in app/fast_api_app.py:L55-L58.",
+        "Incomplete .env.example & Committed .env Secrets (Principle 2 Violation): .env.example (L1-L11) omits 8 required runtime variables (GEMINI_MODEL, WORKWEEK_MCP_URL, WORKWEEK_MCP_TOKEN, SERVICEIMMEDIATELY_MCP_URL, SERVICEIMMEDIATELY_MCP_TOKEN, MODEL_ARMOR_TEMPLATE_ID, ENABLE_VERTEX_SEARCH, VERTEX_AI_DATA_STORE_ID), while live tokens are stored in .env.",
+        "Unupdated Scaffold README.md: README.md (L1-L93) retains generic agents-cli scaffold boilerplate ('Simple ReAct agent') instead of documenting the Altostrat HR Multi-Agent architecture, MCP setup, and custom REST endpoints.",
+        "Terraform IaC Drift vs. SDD §4.2, §5.5.3 & §7.1 (Principle 3 Violation): deployment/terraform/single-project/ omits the modular layout (modules/cloud_run, modules/vertex_ai, modules/security, modules/storage), sets cpu='1', max_instance_request_concurrency=8, max_instance_count=10, and ingress='INGRESS_TRAFFIC_ALL' (service.tf:L21, L52, L99, L103) vs. SDD specs (cpu=2, concurrency=80, max_instances=20, VPC-SC, Cloud Armor, CMEK, Secret Manager, Vertex AI Search, Model Armor, gs://altostrat-hr-policies).",
+        "Evaluation Dataset Scale & Load Test Gap vs. SDD §9.1 & §9.2: Golden dataset contains 10 cases (hr-mvp1-golden-dataset.json) + 4 basic cases (basic-dataset.json) rather than the SDD §9.2 specification of 250 golden cases, 50 red-team attacks, 20 identity-isolation cases, 200 benign false-positive cases, and 50/500-user load tests."
+      ]
+    }
+  ],
+  "structural_drift_findings": [
+    {
+      "category": "Security & Identity Drift (Principles 1 & 2)",
+      "sdd_specification": "SDD §4.1.1 & §5.1.1: Pre-LLM OAuth 2.0 Bearer token validation, get_employee_by_email lookup, per-session verified_employee_id state, immutable X-On-Behalf-Of header, and Secret Manager credential storage.",
+      "code_reality": "app/agent.py:L55,L87,L116,L153 hardcodes 'EMP-894' in prompts; app/mcp_tools.py:L39-L54,L123-L139 hardcodes MCP tokens in source and caches _CACHED_VERIFIED_EMPLOYEE_ID globally; app/fast_api_app.py:L191-L215 lacks OAuth token validation.",
+      "impact": "High"
+    },
+    {
+      "category": "Missing Component (Principle 3)",
+      "sdd_specification": "SDD §5.3: Saga / Compensating Action Orchestrator with durable Cloud Tasks retry queue (DLQ), Pub/Sub IT Ops alerting, and saga_state tracking (PENDING_RETRY, RECOVERED, ESCALATED).",
+      "code_reality": "No Saga state manager, Cloud Tasks retry queue, or compensating action handler exists in app/.",
+      "impact": "High"
+    },
+    {
+      "category": "Missing Resilience Pattern (Principle 3)",
+      "sdd_specification": "SDD §5.2 & §5.5.3: Exponential backoff with jitter (500ms, 1000ms, 2000ms) and circuit breaker tripping after 5 consecutive 429/5xx errors on FastMCP calls.",
+      "code_reality": "app/mcp_tools.py:L57-L104 creates a fresh httpx.AsyncClient(timeout=15.0) per tool call with no retry policy and no circuit breaker.",
+      "impact": "Medium"
+    },
+    {
+      "category": "Contract & Schema Mismatch",
+      "sdd_specification": "SDD §5.1 & §5.4.2: Standardized FastMCP tool names/arguments (hours-based leave, 4-hour duplicate ticket scan, X-Automation-Origin header) and 11 Pydantic response models + ToolError envelope.",
+      "code_reality": "app/mcp_tools.py and app/guardrails.py use days-based leave, omit duplicate ticket scanning within 4 hours, omit X-Automation-Origin headers, and parse raw text strings with regex (app/fast_api_app.py:L137-L161) instead of Pydantic DTOs.",
+      "impact": "Medium"
+    },
+    {
+      "category": "Infrastructure & RAG Topology Drift",
+      "sdd_specification": "SDD §1.3, §5.5.3, §7.1: Vertex AI Search over gs://altostrat-hr-policies with Pub/Sub sync (<15 min), Model Armor enabled in-line, and modular Terraform (CPU=2, concurrency=80, max_instances=20, VPC-SC, CMEK, Secret Manager).",
+      "code_reality": "app/policy_rag.py:L26,L311 uses local file hr_policy_handbook.md with ENABLE_VERTEX_SEARCH=false default; deployment/terraform/single-project/service.tf configures CPU=1, concurrency=8, max_instances=10, INGRESS_TRAFFIC_ALL, and omits Vertex AI Search, Model Armor, Secret Manager, and VPC-SC resources.",
+      "impact": "Medium"
+    }
+  ],
+  "top_recommendations": [
+    "Remove all hardcoded 'EMP-894' identities, 'dc-test2-489503' project IDs, 'doralyn.c.googlers.com' CORS origins, and default MCP tokens from app/agent.py, app/fast_api_app.py, app/mcp_tools.py, and app/guardrails.py; populate .env.example with all required variables and load secrets from Secret Manager.",
+    "Implement FastAPI OAuth 2.0 Bearer authentication middleware in app/fast_api_app.py that resolves the caller's identity per session and passes X-On-Behalf-Of and X-Automation-Origin: altostrat-hr-agent headers on all MCP requests in app/mcp_tools.py.",
+    "Add an async circuit breaker (tripping at 5 consecutive 429/5xx failures) and exponential backoff retry wrapper (500ms, 1000ms, 2000ms) around call_workweek_mcp_tool and call_serviceimmediately_mcp_tool in app/mcp_tools.py, plus a 4-hour duplicate ticket check in enforce_tool_guardrails.",
+    "Implement the Saga / Compensating Action handler (SDD §5.3) with durable retry queueing and saga_state audit logging (PENDING_RETRY, RECOVERED, ESCALATED) when Step-2 ITSM or HCM writes fail during cross-system workflows (UC-2.1, UC-2.2, UC-2.3).",
+    "Define the 11 Pydantic entity models and ToolError envelope from SDD §5.4.2, expand redact_spii in app/guardrails.py to mask phone numbers, home street addresses, and medical notes (§4.3), and align deployment/terraform/single-project/service.tf with SDD §5.5.3/§7.1 sizing and security resources."
+  ],
+  "red_flags": [
+    "Hardcoded MCP authentication tokens (WORKWEEK_MCP_TOKEN, SERVICEIMMEDIATELY_MCP_TOKEN) in app/mcp_tools.py:L39-L51 and committed .env file.",
+    "Hardcoded user identity ('EMP-894') in system prompts (app/agent.py:L55,L87,L116,L153) and process-global _CACHED_VERIFIED_EMPLOYEE_ID (app/mcp_tools.py:L54).",
+    "Hardcoded GCP project ID ('dc-test2-489503') and machine-specific hostname ('http://doralyn.c.googlers.com:8000') in app/fast_api_app.py:L51-L58."
+  ]
+}
